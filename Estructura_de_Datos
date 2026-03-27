@@ -1,0 +1,15 @@
+Estructura de Datos
+Es una forma particular de organizar y almacenar datos en una computadora para que puedan ser almacenados de forma eficiente. (inserción, eliminación, búsqueda, actualización)
+Tipos:
+-Estáticas: El tamaño y la estructura se definen en la compilación y no pueden cambiar durante la ejecución.
+          ejemplo:
+           - arrays: Una colección de elementos, todos del mismo tipo, en la que cada elemento se identifica mediante un índice.
+-Dinámicas: Permiten que el tamaño y la organización cambien durante la ejecución del programa.
+        -Lineales:
+           -Linked Lists: Una colección de nodos donde cada nodo contiene un dato y una referencia (o enlace) al siguiente nodo.
+           -Stacks: Una colección de elementos que sigue el principio LIFO (Last In, First Out), donde el último elemento añadido es el primero en ser removido.
+           -Colas (Queues): Una colección de elementos que sigue el principio FIFO (First In, First Out), donde el primer elemento añadido es el primero en ser removido.
+        - No lineales:
+           -Árboles (Trees): Una estructura jerárquica en la que cada nodo tiene un valor y una lista de referencias a otros nodos (sus hijos).
+           -Grafos (Graphs): Una colección de nodos (o vértices) y arcos (o aristas) que conectan pares de nodos. Pueden ser dirigidos o no dirigidos.
+           -Tablas hash: Una estructura que asocia claves a valores y utiliza una función hash para determinar la posición en la que debe almacenar cada par clave-valor.
