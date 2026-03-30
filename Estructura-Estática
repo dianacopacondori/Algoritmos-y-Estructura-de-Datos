@@ -1,0 +1,6 @@
+OPERACIONES 
+-Inserción: No es posible. Se puede simular desplazando algún elemento a la derecha, y colocando el nuevo en la posición deseada.
+-Actualización: Se accede al índice y se cambia el valor.
+-Eliminación: No es posible. Se puede simular desplazando el elemento a la izquierda la cubrir el espacio eliminado.
+-Recorrido: Usando un bucle.
+-Copia: un nuevo arreglo con los mismo elementos. System.arraycopy() / .clone()
