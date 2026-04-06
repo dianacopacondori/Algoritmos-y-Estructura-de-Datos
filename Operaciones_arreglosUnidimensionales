@@ -1,0 +1,6 @@
+-Comparación: Para que dos arreglos sean considerados iguales, 
+  deben tener la misma longitud y sus elementos correspondientes deben ser idénticos.
+
+-Clonacion: Crear una copia exacta. Esto es útil cuando necesitas modificar un arreglo sin afectar el original.
+-Fusión: Implica combinar dos o más arreglos en uno solo. Esto se puede hacer simplemente concatenando los
+arreglos.
