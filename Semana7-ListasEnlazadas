@@ -1,0 +1,25 @@
+Una lista enlazada está compuesta por nodos. Cada nodo contiene dos partes principales:
+Dato: El valor o la información que el nodo almacena.
+Apuntador: Una referencia o dirección que apunta al siguiente nodo en la lista.
+La lista enlazada comienza con un nodo cabeza (head), que es el primer nodo de la lista.
+El último nodo de la lista enlazada tiene
+un apuntador que apunta a null, lo que indica que es el final de la lista.
+TIPOS
+Lista Enlazada Simple: Cada nodo apunta al siguiente nodo, y el último nodo apunta a null.
+Lista Doble Enlazada: Cada nodo contiene un apuntador al nodo anterior y otro al siguiente.
+Lista Enlazada Circular: El último nodo apunta de vuelta al primer nodo, formando un ciclo.
+OPERACIONES BASICAS
+INSERCIÓN: 
+Agregar un nuevo nodo al principio, al final, o en una posición específica de la lista.
+Inserción al inicio: Se crea un nuevo nodo y se establece su apuntador al nodo cabeza actual. 
+Luego, la cabeza de la lista se
+actualiza para que apunte al nuevo nodo.
+Inserción al final: Se recorre la lista hasta encontrar el último nodo, luego se crea un nuevo 
+nodo y se actualiza el apuntador del
+último nodo para que apunte al nuevo nodo.
+ELIMINACIÓN:
+Eliminar por valor: Se busca el nodo que contiene el valor a eliminar, y se ajustan los 
+apuntadores para saltar el nodo a eliminar.
+Eliminar al inicio: Simplemente se mueve la cabeza de la lista al segundo nodo.
+Eliminar al final: Se recorre la lista hasta encontrar el penúltimo nodo, y se actualiza su
+apuntador para que apunte a null.
