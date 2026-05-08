@@ -1,0 +1,14 @@
+Permiten la modificación de su tamaño durante la ejecución del programa.
+TIPO ABSTRACTO DE DATOS(TAD): es una descripción matemática de un conjunto de datos y de las 
+operaciones que se puede realizar sobre estos datos. 
+CONCEPTOS CLAVE: 
+Dominio de valores: Conjunto de todos los posibles valores que puede tomar el TAD.
+Operaciones: Conjunto de operaciones que se pueden realizar sobre el TAD (inserción, eliminación, búsqueda).
+Especificación formal: Definición precisa de las operaciones y de su comportamiento(Formal).
+Implementación: Código que lleva a cabo las operaciones del TAD.
+•ESPECIFICACION INFORMAL: Describe en lenguaje natural o de manera menos rigurosa las operaciones y su
+comportamiento. 
+•ESPECIFICACION FORMAL: Utiliza notaciones matemáticas o lógicas para describir con precisión las operaciones.
+  Precondición: Condiciones que deben ser verdaderas antes de realizar una operación.
+  Postcondición: Condiciones que serán verdaderas después de realizar la operación.
+  Invariante: Propiedad que se mantiene verdadera antes y después de cualquier operación del TAD.

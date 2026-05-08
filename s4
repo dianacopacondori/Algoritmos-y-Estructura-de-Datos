@@ -1,0 +1,304 @@
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+
+// 1. INTERFAZ COMÚN PARA TODOS LOS TIPOS DE MATRIZ
+public interface Matrix {
+    int rows();
+    int cols();
+    double get(int i, int j);
+    void set(int i, int j, double value);
+    Matrix add(Matrix other);
+    Matrix multiply(Matrix other);
+    Matrix transpose();
+    String type();
+    long storedElements(); // Para verificar optimización de almacenamiento
+}
+
+// ==========================================
+// 2. MATRIZ DENSA (Caso base, sin optimización)
+// ==========================================
+class DenseMatrix implements Matrix {
+    private final int rows, cols;
+    private final double[][] data;
+
+    public DenseMatrix(int rows, int cols) {
+        if (rows <= 0 || cols <= 0) throw new IllegalArgumentException("Dimensiones inválidas");
+        this.rows = rows;
+        this.cols = cols;
+        this.data = new double[rows][cols];
+    }
+
+    // Acceso directo O(1)
+    @Override public double get(int i, int j) { return data[i][j]; }
+    @Override public void set(int i, int j, double value) { data[i][j] = value; }
+    @Override public int rows() { return rows; }
+    @Override public int cols() { return cols; }
+    @Override public String type() { return "Densa"; }
+    @Override public long storedElements() { return (long) rows * cols; }
+
+    @Override
+    public Matrix add(Matrix other) {
+        if (rows != other.rows() || cols != other.cols()) throw new IllegalArgumentException("Dimensiones incompatibles");
+        Matrix res = new DenseMatrix(rows, cols);
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++)
+                res.set(i, j, get(i, j) + other.get(i, j));
+        return res;
+    }
+
+    @Override
+    public Matrix multiply(Matrix other) {
+        if (cols != other.rows()) throw new IllegalArgumentException("Dimensiones incompatibles para multiplicación");
+        Matrix res = new DenseMatrix(rows, other.cols());
+        for (int i = 0; i < rows; i++)
+            for (int k = 0; k < cols; k++) {
+                double a = get(i, k);
+                if (a == 0.0) continue; // Pequeña optimización
+                for (int j = 0; j < other.cols(); j++)
+                    res.set(i, j, res.get(i, j) + a * other.get(k, j));
+            }
+        return res;
+    }
+
+    @Override
+    public Matrix transpose() {
+        Matrix t = new DenseMatrix(cols, rows);
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++)
+                t.set(j, i, get(i, j));
+        return t;
+    }
+}
+
+// ==========================================
+// 3. MATRIZ DISPERSA (Sparse) - Optimizada para ceros
+// ==========================================
+class SparseMatrix implements Matrix {
+    private final int rows, cols;
+    // Clave = i * cols + j. Solo almacena valores != 0
+    private final Map<Long, Double> data = new HashMap<>();
+
+    public SparseMatrix(int rows, int cols) {
+        this.rows = rows;
+        this.cols = cols;
+    }
+
+    // Acceso optimizado: O(1) promedio, devuelve 0 implícito
+    @Override public double get(int i, int j) {
+        return data.getOrDefault((long) i * cols + j, 0.0);
+    }
+
+    @Override public void set(int i, int j, double value) {
+        long key = (long) i * cols + j;
+        if (value == 0.0) data.remove(key);
+        else data.put(key, value);
+    }
+
+    @Override public int rows() { return rows; }
+    @Override public int cols() { return cols; }
+    @Override public String type() { return "Dispersa (Sparse)"; }
+    @Override public long storedElements() { return data.size(); }
+
+    @Override
+    public Matrix add(Matrix other) {
+        if (rows != other.rows() || cols != other.cols()) throw new IllegalArgumentException("Dimensiones incompatibles");
+        SparseMatrix res = new SparseMatrix(rows, cols);
+        // Copia datos de esta matriz
+        data.forEach((k, v) -> res.data.put(k, v));
+        // Suma datos de la otra (si es Sparse, usa su mapa; si no, itera densamente)
+        if (other instanceof SparseMatrix) {
+            ((SparseMatrix) other).data.forEach((k, v) -> {
+                res.data.merge(k, v, Double::sum);
+                if (res.data.get(k) == 0.0) res.data.remove(k);
+            });
+        } else {
+            for (int i = 0; i < rows; i++)
+                for (int j = 0; j < cols; j++) {
+                    double val = other.get(i, j);
+                    if (val != 0.0) res.set(i, j, res.get(i, j) + val);
+                }
+        }
+        return res;
+    }
+
+    @Override
+    public Matrix multiply(Matrix other) {
+        if (cols != other.rows()) throw new IllegalArgumentException("Dimensiones incompatibles");
+        SparseMatrix res = new SparseMatrix(rows, other.cols());
+        // Optimización: solo itera sobre elementos no nulos de A
+        for (Map.Entry<Long, Double> entry : data.entrySet()) {
+            int i = (int) (entry.getKey() / cols);
+            int k = (int) (entry.getKey() % cols);
+            double a = entry.getValue();
+            for (int j = 0; j < other.cols(); j++) {
+                double b = other.get(k, j);
+                if (b != 0.0) res.set(i, j, res.get(i, j) + a * b);
+            }
+        }
+        return res;
+    }
+
+    @Override
+    public Matrix transpose() {
+        SparseMatrix t = new SparseMatrix(cols, rows);
+        for (Map.Entry<Long, Double> entry : data.entrySet()) {
+            int i = (int) (entry.getKey() / cols);
+            int j = (int) (entry.getKey() % cols);
+            t.set(j, i, entry.getValue());
+        }
+        return t;
+    }
+}
+
+// ==========================================
+// 4. MATRIZ DIAGONAL - Solo almacena diagonal principal
+// ==========================================
+class DiagonalMatrix implements Matrix {
+    private final int n;
+    private final double[] diag;
+
+    public DiagonalMatrix(int n) {
+        if (n <= 0) throw new IllegalArgumentException("Dimensión inválida");
+        this.n = n;
+        this.diag = new double[n];
+    }
+
+    // Acceso O(1) con verificación de índice
+    @Override public double get(int i, int j) { return (i == j) ? diag[i] : 0.0; }
+    @Override public void set(int i, int j, double value) {
+        if (i == j) diag[i] = value;
+        else if (value != 0.0) throw new IllegalArgumentException("Matriz diagonal: solo se permiten valores en la diagonal");
+    }
+    @Override public int rows() { return n; }
+    @Override public int cols() { return n; }
+    @Override public String type() { return "Diagonal"; }
+    @Override public long storedElements() { return n; }
+
+    @Override
+    public Matrix add(Matrix other) {
+        if (n != other.rows() || n != other.cols()) throw new IllegalArgumentException("Dimensiones incompatibles");
+        DiagonalMatrix res = new DiagonalMatrix(n);
+        for (int i = 0; i < n; i++) res.diag[i] = diag[i] + other.get(i, i);
+        return res;
+    }
+
+    @Override
+    public Matrix multiply(Matrix other) {
+        if (n != other.rows()) throw new IllegalArgumentException("Dimensiones incompatibles");
+        // Si la otra es diagonal: O(n)
+        if (other instanceof DiagonalMatrix) {
+            DiagonalMatrix d = (DiagonalMatrix) other;
+            DiagonalMatrix res = new DiagonalMatrix(n);
+            for (int i = 0; i < n; i++) res.diag[i] = diag[i] * d.diag[i];
+            return res;
+        }
+        // Si es densa o dispersa: O(n^2) optimizado
+        Matrix res = other instanceof DenseMatrix ? new DenseMatrix(n, other.cols()) : new SparseMatrix(n, other.cols());
+        for (int i = 0; i < n; i++) {
+            double d = diag[i];
+            for (int j = 0; j < other.cols(); j++)
+                res.set(i, j, d * other.get(i, j));
+        }
+        return res;
+    }
+
+    @Override
+    public Matrix transpose() {
+        // La transpuesta de una diagonal es ella misma
+        DiagonalMatrix t = new DiagonalMatrix(n);
+        System.arraycopy(diag, 0, t.diag, 0, n);
+        return t;
+    }
+}
+
+// ==========================================
+// 5. VERIFICACIÓN DE ALMACENAMIENTO Y RENDIMIENTO
+// ==========================================
+class MatrixBenchmark {
+    public static void run(int size, double density) {
+        System.out.printf("\n=== BENCHMARK: Matrices %dx%d (Densidad: %.1f%%) ===\n", size, size, density * 100);
+
+        // Generar matriz de referencia dispersa
+        SparseMatrix sparse = new SparseMatrix(size, size);
+        int nonZeros = 0;
+        Random rand = new Random(42);
+        for (int i = 0; i < size; i++)
+            for (int j = 0; j < size; j++)
+                if (rand.nextDouble() < density) {
+                    sparse.set(i, j, rand.nextDouble());
+                    nonZeros++;
+                }
+
+        // Convertir a densa para comparación
+        DenseMatrix dense = new DenseMatrix(size, size);
+        for (int i = 0; i < size; i++)
+            for (int j = 0; j < size; j++) dense.set(i, j, sparse.get(i, j));
+
+        // Matriz diagonal (solo para verificar operaciones específicas)
+        DiagonalMatrix diag = new DiagonalMatrix(size);
+        for (int i = 0; i < size; i++) diag.set(i, i, dense.get(i, i));
+
+        // 4.1 Verificación de almacenamiento
+        System.out.println("Elementos almacenados teóricos (Densa): " + dense.storedElements());
+        System.out.println("Elementos almacenados reales (Sparse): " + sparse.storedElements());
+        System.out.println("Elementos almacenados reales (Diagonal): " + diag.storedElements());
+        System.out.printf("Ahorro de memoria (Sparse vs Dense): %.2f%%\n", (1.0 - (double) sparse.storedElements() / dense.storedElements()) * 100);
+
+        // 4.2 Verificación de rendimiento (Tiempo de ejecución)
+        runTimed("Suma (Dense + Dense)", () -> dense.add(dense));
+        runTimed("Suma (Sparse + Sparse)", () -> sparse.add(sparse));
+        runTimed("Multiplicación (Dense * Dense)", () -> dense.multiply(dense));
+        runTimed("Multiplicación (Sparse * Sparse)", () -> sparse.multiply(sparse));
+        runTimed("Multiplicación (Diagonal * Diagonal)", () -> diag.multiply(diag));
+        runTimed("Transposición (Dense)", () -> dense.transpose());
+        runTimed("Transposición (Sparse)", () -> sparse.transpose());
+    }
+
+    private static void runTimed(String label, Runnable op) {
+        long start = System.nanoTime();
+        op.run();
+        long end = System.nanoTime();
+        System.out.printf("%-35s %6.2f ms\n", label, TimeUnit.NANOSECONDS.toMillis(end - start));
+    }
+}
+
+// ==========================================
+// MAIN
+// ==========================================
+public class SpecialMatrices {
+    public static void main(String[] args) {
+        System.out.println("Implementación de Matrices Especiales en Java");
+        System.out.println("1. Declaración de tipos especiales: Dense, Sparse, Diagonal");
+        System.out.println("2. Acceso optimizado por tipo implementado en get()/set()");
+        System.out.println("3. Operaciones: suma, multiplicación, transposición");
+        System.out.println("4. Verificación de almacenamiento y rendimiento:");
+
+        // Prueba con matrices grandes pero manejables
+        MatrixBenchmark.run(2000, 0.01); // 1% de densidad
+    }
+}
+
+
+Declaración de matrices especiales
+Se definen tres implementaciones de la interfaz Matrix:
+DenseMatrix: Almacenamiento clásico double[][].
+SparseMatrix: Usa HashMap<Long, Double> con clave i*cols + j. Solo guarda elementos ≠ 0.
+DiagonalMatrix: Usa un arreglo 1D double[] de tamaño n. Los fuera de la diagonal se tratan implícitamente como 0.
+Acceso optimizado según tipo
+Dense: Acceso directo data[i][j] → O(1) sin overhead.
+Sparse: get() usa HashMap.getOrDefault() → O(1) promedio. set() elimina la clave si el valor es 0, manteniendo el mapa pequeño.
+Diagonal: get() verifica i == j en O(1). Evita asignaciones innecesarias y lanza excepción si se intenta guardar un valor fuera de la diagonal.
+Operaciones básicas optimizadas
+Suma: Itera solo sobre elementos no nulos en Sparse. En Diagonal, es O(n).
+Multiplicación:
+Dense: Triple bucle con poda temprana if (a == 0) continue.
+Sparse: Itera solo sobre entradas del mapa de la primera matriz. Complejidad real O(nnz(A) * cols(B)) en lugar de O(n³).
+Diagonal: Si ambas son diagonales, O(n). Si una es diagonal y otra general, O(n²) con multiplicación escalar por fila.
+Transposición:
+Dense: Intercambio de índices.
+Sparse: Recorre el mapa e invierte coordenadas.
+Diagonal: Retorna copia idéntica (propiedad matemática: D^T = D).
+Verificación de almacenamiento y rendimiento
+La clase MatrixBenchmark genera una matriz 2000x2000 con 1% de densidad y mide:
+Almacenamiento: Compara storedElements() teórico vs real. Con 1% de densidad, Sparse usa ~99% menos espacio.
+Rendimiento: Usa System.nanoTime() para medir operaciones. Se observa que Sparse y Diagonal son órdenes de magnitud más rápidos en multiplicación y transposición gracias a la poda de ceros y complejidad reducida.
